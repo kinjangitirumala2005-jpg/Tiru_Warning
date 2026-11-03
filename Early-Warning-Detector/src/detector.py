@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 from collections import deque
 from src.config import Config
-from datetime import datetime
+
 
 # Try to import TensorFlow; if not installed or model not present, we use intelligent CV fallback
 TF_AVAILABLE = False
