@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+
+{% block title %}System Settings & Diagnostics | Wildfire Smoke Detector{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <!-- Left Column: Detection Parameters -->
+    <div class="col-12 col-lg-6">
+        <div class="dashboard-card p-4 h-100">
+            <h5 class="fw-bold mb-3 d-flex align-items-center gap-2">
+                <i class="bi bi-sliders text-primary"></i> Detection & Early-Warning Parameters
+            </h5>
+            <p class="text-secondary small">
+                Adjust detection thresholds to optimize sensitivity and false-alarm rejection.
+            </p>
+
+            <form action="{{ url_for('save_settings') }}" method="POST">
+                <div class="mb-3">
+                    <label class="form-label">Confidence Threshold (0.50 – 0.95)</label>
+                    <div class="input-group">
+                        <input type="number" step="0.05" min="0.5" max="0.99" name="confidence_threshold" class="form-control" value="{{ config_data.CONFIDENCE_THRESHOLD }}">
+                        <span class="input-group-text bg-dark text-light border-secondary">Score</span>
+                    </div>
+                    <div class="form-text" style="font-size: 0.8rem;">
+                        Frames with predicted smoke probability above this value are counted as positive detections.
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Consecutive Positive Frames to Trigger Alert</label>
+                    <input type="number" min="1" max="30" name="consecutive_frames" class="form-control" value="{{ config_data.CONSECUTIVE_FRAMES_REQUIRED }}">
+                    <div class="form-text" style="font-size: 0.8rem;">
+                        Filters out momentary clouds, fog, and dust by requiring consecutive positive frames before issuing an alert.
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Alert Cooldown Window (Seconds)</label>
+                    <input type="number" min="30" max="3600" name="alert_cooldown" class="form-control" value="{{ config_data.ALERT_COOLDOWN_SECONDS }}">
+                    <div class="form-text" style="font-size: 0.8rem;">
+                        Minimum seconds between subsequent alert emails to avoid flooding the inbox.
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-sm px-4">
+                    <i class="bi bi-save me-1"></i> Save Parameters
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Right Column: Email SMTP Alerts & Diagnostics -->
+    <div class="col-12 col-lg-6">
+        <div class="dashboard-card p-4 h-100">
+            <h5 class="fw-bold mb-3 d-flex align-items-center gap-2">
+                <i class="bi bi-envelope-at text-warning"></i> Email SMTP Alerts
+            </h5>
+            <p class="text-secondary small">
+                Configure notifications to dispatch early-warning wildfire alerts to forest department officers.
+            </p>
+
+            <ul class="list-unstyled text-secondary small mb-3">
+                <li class="d-flex justify-content-between py-1 border-bottom border-dark">
+                    <span>SMTP Server:</span>
+                    <strong class="text-light">{{ config_data.SMTP_SERVER }}:{{ config_data.SMTP_PORT }}</strong>
+                </li>
+                <li class="d-flex justify-content-between py-1 border-bottom border-dark">
+                    <span>Sender Account:</span>
+                    <strong class="text-light">{{ config_data.SMTP_USERNAME or "Not Configured" }}</strong>
+                </li>
+                <li class="d-flex justify-content-between py-1 border-bottom border-dark">
+                    <span>Recipient Officer Email:</span>
+                    <strong class="text-light">{{ config_data.ALERT_RECIPIENT_EMAIL or "Not Configured" }}</strong>
+                </li>
+                <li class="d-flex justify-content-between py-1 border-bottom border-dark">
+                    <span>Live Email Delivery:</span>
+                    <strong class="{% if config_data.EMAIL_ALERTS_ENABLED %}text-success{% else %}text-warning{% endif %}">
+                        {% if config_data.EMAIL_ALERTS_ENABLED %}Enabled{% else %}Simulated (Logged to DB){% endif %}
+                    </strong>
+                </li>
+            </ul>
+
+            <div class="p-3 rounded bg-dark border border-secondary mb-3">
+                <div class="small fw-semibold text-light mb-1">
+                    <i class="bi bi-info-circle text-info me-1"></i> How to enable live SMTP:
+                </div>
+                <div class="text-secondary" style="font-size: 0.8rem;">
+                    Set <code>EMAIL_ALERTS_ENABLED=True</code>, <code>SMTP_USERNAME</code>, and <code>SMTP_PASSWORD</code> in your <code>.env</code> file. For Gmail, use a 16-character Google App Password.
+                </div>
+            </div>
+
+            <div class="d-flex align-items-center gap-3">
+                <button type="button" class="btn btn-warning btn-sm fw-semibold" id="btn-test-alert" onclick="triggerTestAlert()">
+                    <i class="bi bi-bell-fill me-1"></i> Send Test Alert
+                </button>
+                <div id="test-alert-status" class="small"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block title %}Live Surveillance Feed | Wildfire Smoke Detector{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <!-- Main Video Feed Area -->
+    <div class="col-12 col-xl-8">
+        <div class="video-feed-wrapper">
+            <div class="live-indicator">
+                <span class="pulsing-dot"></span>
+                <span>MONITORING ACTIVE</span>
+            </div>
+
+            <!-- MJPEG Video Stream directly from OpenCV -->
+            <img src="{{ url_for('video_feed') }}" 
+                 alt="Live Surveillance Stream" 
+                 class="video-feed-img"
+                 onerror="this.onerror=null; this.src='https://placehold.co/800x450/161e2b/ffffff?text=Camera+Stream+Offline+or+Not+Detected';">
+        </div>
+
+        <div class="d-flex flex-wrap align-items-center justify-content-between mt-3 px-2">
+            <div class="text-secondary small">
+                <i class="bi bi-info-circle me-1"></i> Stream feeds directly into the CNN detection loop at ~15-30 FPS with temporal false-alarm smoothing.
+            </div>
+            <div>
+                <a href="{{ url_for('live_view') }}" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-arrow-clockwise"></i> Reconnect Stream
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Control & Telemetry Panel -->
+    <div class="col-12 col-xl-4">
+        <div class="dashboard-card p-4 mb-4">
+            <h5 class="fw-bold mb-3 d-flex align-items-center gap-2">
+                <i class="bi bi-broadcast text-danger"></i> Surveillance Station
+            </h5>
+
+            <ul class="list-unstyled text-secondary small mb-3">
+                <li class="d-flex justify-content-between py-1 border-bottom border-dark">
+                    <span>Camera Identity:</span>
+                    <strong class="text-light">{{ config_data.DEFAULT_CAMERA_NAME }}</strong>
+                </li>
+                <li class="d-flex justify-content-between py-1 border-bottom border-dark">
+                    <span>Location Sector:</span>
+                    <strong class="text-light">{{ config_data.DEFAULT_LOCATION }}</strong>
+                </li>
+                <li class="d-flex justify-content-between py-1 border-bottom border-dark">
+                    <span>Inference Engine:</span>
+                    <strong class="text-info">{{ active_engine }}</strong>
+                </li>
+                <li class="d-flex justify-content-between py-1 border-bottom border-dark">
+                    <span>Alarm Trigger Rule:</span>
+                    <strong class="text-warning">&ge; {{ config_data.CONSECUTIVE_FRAMES_REQUIRED }} Consecutive Frames</strong>
+                </li>
+                <li class="d-flex justify-content-between py-1">
+                    <span>Confidence Trigger:</span>
+                    <strong class="text-light">&ge; {{ (config_data.CONFIDENCE_THRESHOLD * 100) | int }}%</strong>
+                </li>
+            </ul>
+
+            <div class="p-3 rounded bg-dark border border-secondary mb-3">
+                <div class="small fw-semibold text-light mb-1">
+                    <i class="bi bi-shield-lock text-success me-1"></i> False-Alarm Guard Active
+                </div>
+                <div class="text-secondary" style="font-size: 0.8rem;">
+                    Transient smoke-like artifacts (such as fleeting low clouds, dust plumes, or lens flare) are rejected by requiring consecutive positive confirmations over a temporal window.
+                </div>
+            </div>
+        </div>
+
+        <!-- Camera Feed Source Settings -->
+        <div class="dashboard-card p-4">
+            <h6 class="fw-bold mb-3 d-flex align-items-center gap-2">
+                <i class="bi bi-sliders text-primary"></i> Camera Feed Source
+            </h6>
+
+            <form action="{{ url_for('live_view') }}" method="GET">
+                <div class="mb-3">
+                    <label class="form-label text-secondary small">Video Device Index / RTSP URL</label>
+                    <div class="input-group input-group-sm">
+                        <input type="text" name="camera_source" class="form-control bg-dark text-light border-secondary" placeholder="0 (Webcam) or rtsp://..." value="{{ camera_source }}">
+                        <button class="btn btn-outline-primary" type="submit">Apply</button>
+                    </div>
+                    <div class="form-text text-secondary" style="font-size: 0.75rem;">
+                        Default <code>0</code> uses your integrated or USB webcam. You can also specify an RTSP stream URL or video file path.
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

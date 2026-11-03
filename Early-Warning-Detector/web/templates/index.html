@@ -1,0 +1,249 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard & Image Inference | Wildfire Smoke Detector{% endblock %}
+
+{% block content %}
+<!-- Top Metrics Row -->
+<div class="row g-3 mb-4" id="stats-section">
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="dashboard-card p-3 d-flex align-items-center justify-content-between">
+            <div>
+                <div class="text-secondary small fw-semibold text-uppercase">Total Scanned</div>
+                <div class="fs-3 fw-bold mt-1" id="stat-total">{{ stats.total_detections }}</div>
+            </div>
+            <div class="stat-icon-wrapper stat-icon-info">
+                <i class="bi bi-images"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="dashboard-card p-3 d-flex align-items-center justify-content-between">
+            <div>
+                <div class="text-secondary small fw-semibold text-uppercase">Smoke Incidents</div>
+                <div class="fs-3 fw-bold text-danger mt-1" id="stat-smoke">{{ stats.total_smoke }}</div>
+            </div>
+            <div class="stat-icon-wrapper stat-icon-danger">
+                <i class="bi bi-fire"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="dashboard-card p-3 d-flex align-items-center justify-content-between">
+            <div>
+                <div class="text-secondary small fw-semibold text-uppercase">Clear / Normal</div>
+                <div class="fs-3 fw-bold text-success mt-1" id="stat-clear">{{ stats.total_clear }}</div>
+            </div>
+            <div class="stat-icon-wrapper stat-icon-safe">
+                <i class="bi bi-shield-check"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="dashboard-card p-3 d-flex align-items-center justify-content-between">
+            <div>
+                <div class="text-secondary small fw-semibold text-uppercase">Alerts Sent</div>
+                <div class="fs-3 fw-bold text-warning mt-1" id="stat-alerts">{{ stats.total_alerts }}</div>
+            </div>
+            <div class="stat-icon-wrapper stat-icon-warning">
+                <i class="bi bi-bell-fill"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Left Column: Upload Form -->
+    <div class="col-12 col-lg-5">
+        <div class="dashboard-card p-4 h-100">
+            <h5 class="fw-bold mb-3 d-flex align-items-center gap-2">
+                <i class="bi bi-cloud-arrow-up text-primary"></i> Scan Forest Surveillance Imagery
+            </h5>
+            <p class="text-secondary small">
+                Upload a forest camera snapshot to perform deep learning smoke classification and early-warning alert checks.
+            </p>
+
+            <form action="{{ url_for('upload_media') }}" method="POST" enctype="multipart/form-data" id="upload-form">
+                <div class="upload-dropzone mb-3" id="upload-dropzone" onclick="document.getElementById('file-input').click()">
+                    <i class="bi bi-file-earmark-image fs-1 text-secondary mb-2 d-block"></i>
+                    <span class="fw-semibold text-light">Click to select image</span> or drag & drop here
+                    <div class="text-secondary small mt-1">Accepts JPG, PNG, JPEG</div>
+                    <input type="file" name="file" id="file-input" class="d-none" accept="image/*" required>
+                </div>
+
+                <div class="mb-3 d-none" id="preview-container">
+                    <label class="form-label text-secondary small fw-semibold">Upload Preview</label>
+                    <div class="rounded overflow-hidden border border-secondary" style="max-height: 220px;">
+                        <img id="preview-image" src="#" alt="Preview" class="w-100 h-100" style="object-fit: contain; background: #000;">
+                    </div>
+                </div>
+
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <label class="form-label">Watchtower Station</label>
+                        <input type="text" name="camera_name" class="form-control form-control-sm" value="{{ config_data.DEFAULT_CAMERA_NAME }}">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label">Location / Sector</label>
+                        <input type="text" name="location" class="form-control form-control-sm" value="{{ config_data.DEFAULT_LOCATION }}">
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold d-flex align-items-center justify-content-center gap-2">
+                    <i class="bi bi-search"></i> Run Smoke Analysis
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Right Column: Latest Detection Result OR Placeholder -->
+    <div class="col-12 col-lg-7">
+        {% if latest_result %}
+        <div class="dashboard-card p-4">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <h5 class="fw-bold mb-0">Analysis Diagnostics</h5>
+                {% if latest_result.is_smoke %}
+                    <span class="badge-smoke"><i class="bi bi-exclamation-triangle-fill me-1"></i> Smoke Detected</span>
+                {% else %}
+                    <span class="badge-clear"><i class="bi bi-check-circle-fill me-1"></i> Clear / No Smoke</span>
+                {% endif %}
+            </div>
+
+            <div class="row g-3 mb-4">
+                <div class="col-12 col-md-6">
+                    <div class="text-secondary small mb-1 fw-semibold">Original Image</div>
+                    <div class="rounded overflow-hidden border border-secondary bg-black" style="height: 240px;">
+                        <img src="{{ url_for('static', filename=latest_result.image_path) }}" class="w-100 h-100" style="object-fit: contain;">
+                    </div>
+                </div>
+                <div class="col-12 col-md-6">
+                    <div class="text-secondary small mb-1 fw-semibold">Annotated Inference Result</div>
+                    <div class="rounded overflow-hidden border border-secondary bg-black" style="height: 240px;">
+                        <img src="{{ url_for('static', filename=latest_result.annotated_path) }}" class="w-100 h-100" style="object-fit: contain;">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Confidence Bar -->
+            <div class="mb-3">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="text-secondary small">Confidence Level:</span>
+                    <span class="fw-bold fs-6 {% if latest_result.is_smoke %}text-danger{% else %}text-success{% endif %}">
+                        {{ latest_result.confidence }}%
+                    </span>
+                </div>
+                <div class="progress progress-confidence">
+                    <div class="progress-bar {% if latest_result.is_smoke %}bg-danger{% else %}bg-success{% endif %}" 
+                         role="progressbar" 
+                         style="width: {{ latest_result.confidence }}%;">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Details Table -->
+            <div class="table-responsive">
+                <table class="table table-sm table-custom mb-0">
+                    <tbody>
+                        <tr>
+                            <td class="text-secondary">Camera / Station:</td>
+                            <td class="fw-semibold">{{ latest_result.camera_name }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-secondary">Location Coordinates:</td>
+                            <td>{{ latest_result.location }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-secondary">Alert Notification:</td>
+                            <td>
+                                {% if latest_result.alert_triggered %}
+                                    <span class="badge bg-danger"><i class="bi bi-send-fill me-1"></i> Dispatched to Officials</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Standby / Clear</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="text-secondary">Timestamp:</td>
+                            <td>{{ latest_result.timestamp }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% else %}
+        <div class="dashboard-card p-5 h-100 d-flex flex-column align-items-center justify-content-center text-center">
+            <div class="p-4 rounded-circle bg-dark border border-secondary mb-3">
+                <i class="bi bi-camera fs-1 text-secondary"></i>
+            </div>
+            <h5 class="fw-bold">No Image Analyzed in Current Session</h5>
+            <p class="text-secondary small" style="max-width: 360px;">
+                Upload a camera snapshot on the left, or open the Live Stream Feed to watch real-time inference on forest surveillance feeds.
+            </p>
+            <a href="{{ url_for('live_view') }}" class="btn btn-outline-info btn-sm mt-2">
+                <i class="bi bi-camera-video me-1"></i> Switch to Live Camera Stream
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Recent Scans Table -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="dashboard-card p-4">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <h5 class="fw-bold mb-0">Recent Detection History</h5>
+                <a href="{{ url_for('alerts_view') }}" class="btn btn-sm btn-outline-secondary">View All Logs</a>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-custom align-middle">
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Station</th>
+                            <th>Source</th>
+                            <th>Status</th>
+                            <th>Confidence</th>
+                            <th>Alert</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in recent_logs %}
+                        <tr>
+                            <td>{{ item.timestamp }}</td>
+                            <td>{{ item.camera_name }}</td>
+                            <td><span class="badge bg-dark border border-secondary text-uppercase">{{ item.source_type }}</span></td>
+                            <td>
+                                {% if item.is_smoke %}
+                                    <span class="badge-smoke">Smoke</span>
+                                {% else %}
+                                    <span class="badge-clear">Clear</span>
+                                {% endif %}
+                            </td>
+                            <td class="fw-bold {% if item.is_smoke %}text-danger{% else %}text-success{% endif %}">
+                                {{ item.confidence }}%
+                            </td>
+                            <td>
+                                {% if item.alert_triggered %}
+                                    <i class="bi bi-bell-fill text-warning" title="Notification Sent"></i>
+                                {% else %}
+                                    <i class="bi bi-dash text-secondary"></i>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center text-secondary py-4">No records captured yet. Upload an image above to start.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
